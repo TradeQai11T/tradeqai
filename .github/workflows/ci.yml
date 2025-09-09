@@ -1,0 +1,32 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write      # OIDC
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS creds (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::320819924019:role/TradeQai-GitHub-OIDC
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push smoke image
+        run: |
+          echo 'FROM public.ecr.aws/docker/library/alpine:latest' > Dockerfile
+          echo 'CMD ["sh","-c","echo TradeQai CI OK"]' >> Dockerfile
+          IMAGE="${{ steps.ecr.outputs.registry }}/tradeqai-ci-smoke:$(date +%s)"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
