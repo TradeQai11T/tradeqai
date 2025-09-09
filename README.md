@@ -1,1 +1,2 @@
 # tradeqai
+# TradeQai — OmniCopilot Edition
